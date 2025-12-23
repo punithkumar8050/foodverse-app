@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoodVerse - Search & Login</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        /* CSS: Styling and Dark Theme */
+        :root {
+            --primary: #e23744;
+            --bg-black: #121212;
+            --bg-dark-gray: #1c1c1c;
+            --text-white: #ffffff;
+            --overlay-bg: rgba(0, 0, 0, 0.9);
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-black);
+            color: var(--text-white);
+            padding-bottom: 80px;
+        }
+
+        /* Header */
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px 5%; background-color: var(--bg-dark-gray); border-bottom: 1px solid #333;
+            position: sticky; top: 0; z-index: 100;
+        }
+        .logo { font-size: 24px; font-weight: bold; color: var(--primary); }
+        
+        .user-panel { display: flex; align-items: center; gap: 15px; }
+        .login-btn {
+            background: transparent; border: 1px solid var(--text-white); color: white;
+            padding: 8px 15px; border-radius: 5px; cursor: pointer;
+        }
+        .user-name { color: var(--primary); font-weight: bold; display: none; }
+
+        /* Hero */
+        .hero {
+            text-align: center; padding: 50px 20px;
+            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://upload.wikimedia.org/wikipedia/commons/6/6d/Good_Food_Display_-_NCI_Visuals_Online.jpg');
+            background-size: cover; background-position: center;
+        }
+        /* UPDATED SEARCH BAR */
+        .search-bar { width: 50%; padding: 15px; border-radius: 8px; border: none; font-size: 16px; text-align: center;}
+
+        /* Zones */
+        .food-zones { display: flex; justify-content: center; gap: 15px; padding: 30px 20px; flex-wrap: wrap; }
+        .zone-card {
+            background-color: var(--bg-dark-gray); padding: 10px 20px; border-radius: 30px;
+            cursor: pointer; border: 1px solid #333; transition: 0.3s; font-size: 14px;
+        }
+        .zone-card:hover, .zone-card.active { background-color: var(--primary); border-color: var(--primary); }
+
+        /* Restaurant Grid */
+        .restaurant-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 25px; padding: 0 5%;
+        }
+        .restaurant-card {
+            background-color: var(--bg-dark-gray); border-radius: 15px; overflow: hidden;
+            transition: transform 0.3s; border: 1px solid #333;
+        }
+        .restaurant-card:hover { transform: translateY(-5px); border-color: #555; }
+
+        .res-img-container { width: 100%; height: 180px; overflow: hidden; }
+        .res-img { width: 100%; height: 100%; object-fit: cover; }
+        .res-info { padding: 15px; }
+        .add-btn { background-color: var(--primary); color: white; border: none; padding: 10px; width: 100%; cursor: pointer; border-radius: 5px; margin-top: 10px; font-weight: bold;}
+
+        /* --- MODALS (LOGIN & PAYMENT) --- */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--overlay-bg); z-index: 3000;
+            align-items: center; justify-content: center;
+        }
+        .modal-box {
+            background-color: var(--bg-dark-gray); width: 90%; max-width: 400px;
+            padding: 30px; border-radius: 15px; border: 1px solid #444; text-align: center;
+        }
+        .modal-input {
+            width: 90%; padding: 12px; margin: 10px 0; border-radius: 5px; border: none; font-size: 16px;
+        }
+        .action-btn {
+            background-color: var(--primary); color: white; width: 100%; padding: 15px;
+            font-size: 18px; border: none; border-radius: 8px; margin-top: 20px; cursor: pointer;
+        }
+        
+        .pay-option {
+            display: flex; align-items: center; padding: 15px; margin: 10px 0;
+            background: #2a2a2a; border-radius: 8px; cursor: pointer; border: 1px solid #444; text-align: left;
+        }
+        .pay-option input { margin-right: 15px; transform: scale(1.5); }
+
+        /* Map & Cart */
+        #map-view {
+            display: none; height: 100vh; width: 100%; position: fixed; top: 0; left: 0; z-index: 2000; background-color: #121212;
+        }
+        #google-map { height: 70%; width: 100%; }
+        .order-status { height: 30%; padding: 20px; text-align: center; background-color: var(--bg-dark-gray); border-top: 5px solid var(--primary); }
+        
+        .cart-modal {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background-color: var(--primary); color: white; padding: 15px 30px;
+            border-radius: 30px; cursor: pointer; display: none; z-index: 1000;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5); font-weight: bold; width: 300px; text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">FoodVerse</div>
+        <div class="user-panel">
+            <span class="user-name" id="display-name">Hello, User</span>
+            <button class="login-btn" id="login-btn" onclick="openLoginModal()">Sign Up / Login</button>
+        </div>
+    </header>
+
+    <div class="hero">
+        <h1>What are you craving?</h1>
+        <input type="text" class="search-bar" placeholder="Search for 'Biryani', 'Pizza', 'Cake'..." onkeyup="searchFood()">
+    </div>
+
+    <div class="food-zones">
+        <div class="zone-card active" onclick="filterFood('All')">All</div>
+        <div class="zone-card" onclick="filterFood('North Indian')">🥘 North Indian</div>
+        <div class="zone-card" onclick="filterFood('South Indian')">🥥 South Indian</div>
+        <div class="zone-card" onclick="filterFood('Chinese')">🍜 Chinese</div>
+        <div class="zone-card" onclick="filterFood('Fast Food')">🍔 Fast Food</div>
+        <div class="zone-card" onclick="filterFood('Dessert')">🍰 Dessert</div>
+    </div>
+
+    <div class="restaurant-grid" id="restaurant-list">
+        </div>
+
+    <div id="login-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h2>Welcome to FoodVerse</h2>
+            
+            <div id="step-1">
+                <input type="text" id="user-name" class="modal-input" placeholder="Enter your Name">
+                <input type="number" id="user-phone" class="modal-input" placeholder="Enter Phone Number">
+                <button class="action-btn" onclick="sendOTP()">Send OTP</button>
+            </div>
+
+            <div id="step-2" style="display: none;">
+                <p>OTP sent to <span id="display-phone" style="color:var(--primary)"></span></p>
+                <input type="number" id="user-otp" class="modal-input" placeholder="Enter OTP (Try 1234)">
+                <button class="action-btn" onclick="verifyOTP()">Verify & Login</button>
+            </div>
+            
+            <button onclick="closeModal('login-modal')" style="background:none; border:none; color:#aaa; margin-top:15px; cursor:pointer;">Cancel</button>
+        </div>
+    </div>
+
+    <div id="payment-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h2 style="margin-top:0">Select Payment Method</h2>
+            <p>Total to Pay: <span id="pay-amount" style="color: var(--primary); font-weight:bold;">₹0</span></p>
+            
+            <label class="pay-option">
+                <input type="radio" name="payment" value="UPI" checked>
+                <span>Google Pay / PhonePe / UPI</span>
+            </label>
+            <label class="pay-option">
+                <input type="radio" name="payment" value="Card">
+                <span>Credit / Debit Card</span>
+            </label>
+            <label class="pay-option">
+                <input type="radio" name="payment" value="COD">
+                <span>Cash on Delivery</span>
+            </label>
+
+            <button class="action-btn" onclick="confirmOrder()">✅ Place Order</button>
+            <button onclick="closeModal('payment-modal')" style="background:none; border:none; color:#aaa; margin-top:15px; cursor:pointer;">Cancel</button>
+        </div>
+    </div>
+
+    <div id="map-view">
+        <div id="google-map"></div>
+        <div class="order-status">
+            <h2>Order Placed! <span style="color:#4caf50">● Live</span></h2>
+            <p>Payment Successful via <b id="payment-method-display">UPI</b></p>
+            <p>Driver <b>Ramesh</b> is arriving in:</p>
+            <h1 id="timer">15:00</h1>
+            <button onclick="location.reload()" style="padding:10px 20px; cursor:pointer; background:#333; color:white; border:none; border-radius:5px;">Close</button>
+        </div>
+    </div>
+
+    <div class="cart-modal" id="cart-btn" onclick="openPayment()">Cart (0)</div>
+
+    <script>
+        // --- DATA ---
+        const allRestaurants = [
+            { name: "Butter Chicken", type: "North Indian", price: 320, img: "https://images.pexels.com/photos/2474661/pexels-photo-2474661.jpeg?auto=compress&cs=tinysrgb&w=600" },
+            { name: "Paneer Tikka", type: "North Indian", price: 280, img: "https://images.pexels.com/photos/3928854/pexels-photo-3928854.jpeg?auto=compress&cs=tinysrgb&w=600" },
+            { name: "Dal Makhani", type: "North Indian", price: 220, img: "https://images.pexels.com/photos/674574/pexels-photo-674574.jpeg?auto=compress&cs=tinysrgb&w=600" },
+            { name: "Chole Bhature", type: "North Indian", price: 180, img: "https://images.pexels.com/photos/12737656/pexels-photo-12737656.jpeg?auto=compress&cs=tinysrgb&w=600" },
+            { name: "Tandoori Chicken", type: "North Indian", price: 350, img: "https://images.pexels.com/photos/106343/pexels-photo-106343.jpeg?auto=compress&cs=tinysrgb&w=600" },
+            
+            { name: "Masala Dosa", type: "South Indian", price: 120, img: "https://images.pexels.com/photos/5560763/pexels-photo-5560763.jpeg?auto=compress&cs=tinysrgb&w=600" },
+            { name: "Idli Vada", type: "South Indian", price: 90, img: "https://images.pexels.com/photos/4331490/pexels-photo-4331490.jpeg?auto=compress&cs=tinysrgb&w=600" },
+            { name: "Hyderabadi Biryani", type: "South Indian", price: 300, img: "https://images.pexels.com/photos/7394819/pexels-photo-7394819.jpeg?auto=compress&cs=tinysrgb&w=600" },
+            
+            { name: "Veg Burger", type: "Fast Food", price: 150, img: "https://images.pexels.com/photos/1639557/pexels-photo-1639557.jpeg?auto=compress&cs=tinysrgb&w=600" },
+            { name: "Chicken Pizza", type: "Fast Food", price: 450, img: "https://images.pexels.com/photos/825661/pexels-photo-825661.jpeg?auto=compress&cs=tinysrgb&w=600" },
+            { name: "French Fries", type: "Fast Food", price: 110, img: "https://images.pexels.com/photos/1583884/pexels-photo-1583884.jpeg?auto=compress&cs=tinysrgb&w=600" },
+            
+            { name: "Hakka Noodles", type: "Chinese", price: 200, img: "https://images.pexels.com/photos/2347311/pexels-photo-2347311.jpeg?auto=compress&cs=tinysrgb&w=600" },
+            { name: "Manchurian", type: "Chinese", price: 210, img: "https://images.pexels.com/photos/2664216/pexels-photo-2664216.jpeg?auto=compress&cs=tinysrgb&w=600" },
+            
+            { name: "Gulab Jamun", type: "Dessert", price: 90, img: "https://images.pexels.com/photos/12333519/pexels-photo-12333519.jpeg?auto=compress&cs=tinysrgb&w=600" },
+            { name: "Chocolate Cake", type: "Dessert", price: 200, img: "https://images.pexels.com/photos/291528/pexels-photo-291528.jpeg?auto=compress&cs=tinysrgb&w=600" },
+        ];
+
+        let cart = [];
+        let isLoggedIn = false;
+        let userData = {};
+
+        // --- 1. SEARCH FUNCTION ---
+        function searchFood() {
+            const query = document.querySelector('.search-bar').value.toLowerCase();
+            const filtered = allRestaurants.filter(item => 
+                item.name.toLowerCase().includes(query) || 
+                item.type.toLowerCase().includes(query)
+            );
+            displayRestaurants(filtered);
+        }
+
+        // --- 2. AUTH FUNCTIONALITY ---
+        function openLoginModal() {
+            document.getElementById('login-modal').style.display = 'flex';
+        }
+
+        function sendOTP() {
+            const name = document.getElementById('user-name').value;
+            const phone = document.getElementById('user-phone').value;
+            
+            if(name === "" || phone.length < 10) {
+                alert("Please enter a valid Name and 10-digit Phone Number");
+                return;
+            }
+
+            userData = { name, phone };
+            
+            // UI Transition
+            document.getElementById('step-1').style.display = 'none';
+            document.getElementById('step-2').style.display = 'block';
+            document.getElementById('display-phone').innerText = phone;
+            
+            // Mock OTP Alert
+            alert(`Your Verification OTP is: 1234`);
+        }
+
+        function verifyOTP() {
+            const otp = document.getElementById('user-otp').value;
+            if(otp === "1234") {
+                isLoggedIn = true;
+                closeModal('login-modal');
+                
+                // Update Header
+                document.getElementById('login-btn').style.display = 'none';
+                const nameDisplay = document.getElementById('display-name');
+                nameDisplay.innerText = "Hi, " + userData.name;
+                nameDisplay.style.display = 'block';
+                
+                alert("Login Successful! You can now place orders.");
+            } else {
+                alert("Invalid OTP! Try 1234");
+            }
+        }
+
+        // --- 3. CORE FUNCTIONS ---
+        function displayRestaurants(data) {
+            const grid = document.getElementById('restaurant-list');
+            grid.innerHTML = ''; 
+            if(data.length === 0) grid.innerHTML = "<p>No dishes found.</p>";
+            
+            data.forEach(res => {
+                const card = document.createElement('div');
+                card.className = 'restaurant-card';
+                card.innerHTML = `
+                    <div class="res-img-container">
+                        <img src="${res.img}" class="res-img" onerror="this.src='https://placehold.co/600x400?text=Yummy'">
+                    </div>
+                    <div class="res-info">
+                        <h3 style="margin:0">${res.name}</h3>
+                        <p style="color:#aaa; font-size:14px; margin:5px 0;">${res.type} • ₹${res.price}</p>
+                        <button class="add-btn" onclick="addToCart('${res.name}', ${res.price})">Add to Cart +</button>
+                    </div>`;
+                grid.appendChild(card);
+            });
+        }
+        displayRestaurants(allRestaurants); // Init
+
+        function filterFood(cat) {
+            // Highlight Button
+            document.querySelectorAll('.zone-card').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if(cat === 'All') displayRestaurants(allRestaurants);
+            else displayRestaurants(allRestaurants.filter(r => r.type === cat));
+        }
+
+        function addToCart(item, price) {
+            cart.push({ item, price });
+            const total = cart.reduce((a,b)=>a+b.price,0);
+            const btn = document.getElementById('cart-btn');
+            btn.style.display = 'block';
+            btn.innerText = `View Cart (${cart.length}) • Pay ₹${total}`;
+        }
+
+        function openPayment() {
+            if(cart.length === 0) return;
+            
+            // SECURITY CHECK
+            if(!isLoggedIn) {
+                alert("Please Login to Place Order");
+                openLoginModal();
+                return;
+            }
+
+            const total = cart.reduce((a,b)=>a+b.price,0);
+            document.getElementById('pay-amount').innerText = "₹" + total;
+            document.getElementById('payment-modal').style.display = 'flex';
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        async function confirmOrder() {
+            const method = document.querySelector('input[name="payment"]:checked').value;
+            const total = cart.reduce((a,b)=>a+b.price,0);
+
+            closeModal('payment-modal');
+
+            try {
+                // Connect to backend
+                await fetch('/api/order/place', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        user: userData, 
+                        items: cart, 
+                        total: total, 
+                        paymentMethod: method 
+                    })
+                });
+                // Success Flow
+                showMap(method);
+            } catch (err) {
+                // Fallback Flow
+                showMap(method);
+            }
+        }
+
+        function showMap(method) {
+            document.getElementById('payment-method-display').innerText = method;
+            document.getElementById('map-view').style.display = 'block';
+            initLeafletMap();
+            startTimer();
+        }
+
+        function initLeafletMap() {
+            const lat = 12.9716; const lng = 77.5946;
+            var map = L.map('google-map').setView([lat, lng], 15);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+            L.marker([lat, lng]).addTo(map).bindPopup("Restaurant").openPopup();
+            L.marker([lat + 0.005, lng + 0.005]).addTo(map).bindPopup("User Location");
+            var polyline = L.polyline([[lat, lng], [lat + 0.005, lng + 0.005]], {color: 'red', weight: 5}).addTo(map);
+            map.fitBounds(polyline.getBounds());
+        }
+
+        function startTimer() {
+            let time = 900; 
+            setInterval(() => {
+                time--;
+                let m = Math.floor(time / 60); let s = time % 60;
+                document.getElementById('timer').innerText = `${m}:${s < 10 ? '0'+s : s}`;
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
