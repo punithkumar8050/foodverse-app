@@ -3,114 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FoodVerse - Search & Login</title>
+    <title>FoodVerse - Auto Pilot Mode</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        /* CSS: Styling and Dark Theme */
-        :root {
-            --primary: #e23744;
-            --bg-black: #121212;
-            --bg-dark-gray: #1c1c1c;
-            --text-white: #ffffff;
-            --overlay-bg: rgba(0, 0, 0, 0.9);
-        }
-
-        body {
-            margin: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-black);
-            color: var(--text-white);
-            padding-bottom: 80px;
-        }
-
-        /* Header */
-        header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 20px 5%; background-color: var(--bg-dark-gray); border-bottom: 1px solid #333;
-            position: sticky; top: 0; z-index: 100;
-        }
+        /* --- CORE CSS --- */
+        :root { --primary: #e23744; --bg-black: #121212; --bg-dark-gray: #1c1c1c; --text-white: #ffffff; --overlay-bg: rgba(0, 0, 0, 0.9); }
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-black); color: var(--text-white); padding-bottom: 80px; }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 20px 5%; background-color: var(--bg-dark-gray); border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 100; }
         .logo { font-size: 24px; font-weight: bold; color: var(--primary); }
-        
         .user-panel { display: flex; align-items: center; gap: 15px; }
-        .login-btn {
-            background: transparent; border: 1px solid var(--text-white); color: white;
-            padding: 8px 15px; border-radius: 5px; cursor: pointer;
-        }
+        .login-btn { background: transparent; border: 1px solid var(--text-white); color: white; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
         .user-name { color: var(--primary); font-weight: bold; display: none; }
-
-        /* Hero */
-        .hero {
-            text-align: center; padding: 50px 20px;
-            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://upload.wikimedia.org/wikipedia/commons/6/6d/Good_Food_Display_-_NCI_Visuals_Online.jpg');
-            background-size: cover; background-position: center;
-        }
-        /* UPDATED SEARCH BAR */
+        .hero { text-align: center; padding: 50px 20px; background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://upload.wikimedia.org/wikipedia/commons/6/6d/Good_Food_Display_-_NCI_Visuals_Online.jpg'); background-size: cover; background-position: center; }
         .search-bar { width: 50%; padding: 15px; border-radius: 8px; border: none; font-size: 16px; text-align: center;}
-
-        /* Zones */
+        
+        /* ZONES */
         .food-zones { display: flex; justify-content: center; gap: 15px; padding: 30px 20px; flex-wrap: wrap; }
-        .zone-card {
-            background-color: var(--bg-dark-gray); padding: 10px 20px; border-radius: 30px;
-            cursor: pointer; border: 1px solid #333; transition: 0.3s; font-size: 14px;
-        }
-        .zone-card:hover, .zone-card.active { background-color: var(--primary); border-color: var(--primary); }
-
-        /* Restaurant Grid */
-        .restaurant-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 25px; padding: 0 5%;
-        }
-        .restaurant-card {
-            background-color: var(--bg-dark-gray); border-radius: 15px; overflow: hidden;
-            transition: transform 0.3s; border: 1px solid #333;
-        }
+        .zone-card { background-color: var(--bg-dark-gray); padding: 10px 20px; border-radius: 30px; cursor: pointer; border: 1px solid #333; transition: 0.3s; font-size: 14px; }
+        .zone-card:hover, .zone-card.active { background-color: var(--primary); border-color: var(--primary); transform: scale(1.1); }
+        
+        .restaurant-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 25px; padding: 0 5%; }
+        .restaurant-card { background-color: var(--bg-dark-gray); border-radius: 15px; overflow: hidden; transition: transform 0.3s; border: 1px solid #333; }
         .restaurant-card:hover { transform: translateY(-5px); border-color: #555; }
-
         .res-img-container { width: 100%; height: 180px; overflow: hidden; }
         .res-img { width: 100%; height: 100%; object-fit: cover; }
         .res-info { padding: 15px; }
         .add-btn { background-color: var(--primary); color: white; border: none; padding: 10px; width: 100%; cursor: pointer; border-radius: 5px; margin-top: 10px; font-weight: bold;}
-
-        /* --- MODALS (LOGIN & PAYMENT) --- */
-        .modal-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: var(--overlay-bg); z-index: 3000;
-            align-items: center; justify-content: center;
-        }
-        .modal-box {
-            background-color: var(--bg-dark-gray); width: 90%; max-width: 400px;
-            padding: 30px; border-radius: 15px; border: 1px solid #444; text-align: center;
-        }
-        .modal-input {
-            width: 90%; padding: 12px; margin: 10px 0; border-radius: 5px; border: none; font-size: 16px;
-        }
-        .action-btn {
-            background-color: var(--primary); color: white; width: 100%; padding: 15px;
-            font-size: 18px; border: none; border-radius: 8px; margin-top: 20px; cursor: pointer;
-        }
-        
-        .pay-option {
-            display: flex; align-items: center; padding: 15px; margin: 10px 0;
-            background: #2a2a2a; border-radius: 8px; cursor: pointer; border: 1px solid #444; text-align: left;
-        }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--overlay-bg); z-index: 3000; align-items: center; justify-content: center; }
+        .modal-box { background-color: var(--bg-dark-gray); width: 90%; max-width: 400px; padding: 30px; border-radius: 15px; border: 1px solid #444; text-align: center; }
+        .modal-input { width: 90%; padding: 12px; margin: 10px 0; border-radius: 5px; border: none; font-size: 16px; }
+        .action-btn { background-color: var(--primary); color: white; width: 100%; padding: 15px; font-size: 18px; border: none; border-radius: 8px; margin-top: 20px; cursor: pointer; }
+        .pay-option { display: flex; align-items: center; padding: 15px; margin: 10px 0; background: #2a2a2a; border-radius: 8px; cursor: pointer; border: 1px solid #444; text-align: left; }
         .pay-option input { margin-right: 15px; transform: scale(1.5); }
-
-        /* Map & Cart */
-        #map-view {
-            display: none; height: 100vh; width: 100%; position: fixed; top: 0; left: 0; z-index: 2000; background-color: #121212;
-        }
+        #map-view { display: none; height: 100vh; width: 100%; position: fixed; top: 0; left: 0; z-index: 2000; background-color: #121212; }
         #google-map { height: 70%; width: 100%; }
         .order-status { height: 30%; padding: 20px; text-align: center; background-color: var(--bg-dark-gray); border-top: 5px solid var(--primary); }
-        
-        .cart-modal {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background-color: var(--primary); color: white; padding: 15px 30px;
-            border-radius: 30px; cursor: pointer; display: none; z-index: 1000;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5); font-weight: bold; width: 300px; text-align: center;
+        .cart-modal { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: var(--primary); color: white; padding: 15px 30px; border-radius: 30px; cursor: pointer; display: none; z-index: 1000; box-shadow: 0 5px 15px rgba(0,0,0,0.5); font-weight: bold; width: 300px; text-align: center; }
+
+        /* --- MIC & JARVIS UI --- */
+        .mic-btn {
+            position: fixed; bottom: 30px; right: 30px;
+            width: 70px; height: 70px; background: #222;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; border: 3px solid #555; z-index: 5000;
+            font-size: 30px; color: white; transition: 0.3s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
+        .mic-btn.active-listening { background: #e23744; border-color: white; animation: pulse-ring 2s infinite; }
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(226, 55, 68, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(226, 55, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(226, 55, 68, 0); }
+        }
+        .jarvis-window {
+            position: fixed; bottom: 120px; right: 30px; width: 320px; height: 350px;
+            background-color: rgba(20, 20, 20, 0.95); border: 2px solid #e23744;
+            border-radius: 15px; display: none; flex-direction: column; z-index: 4000;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8); overflow: hidden;
+        }
+        .jarvis-header { background: #e23744; color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; }
+        .jarvis-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .msg { padding: 8px 12px; border-radius: 10px; font-size: 14px; max-width: 80%; }
+        .msg.bot { background-color: #333; color: #fff; align-self: flex-start; border-bottom-left-radius: 0; }
+        .msg.user { background-color: #e23744; color: white; align-self: flex-end; border-bottom-right-radius: 0; }
     </style>
 </head>
 <body>
@@ -124,156 +82,222 @@
     </header>
 
     <div class="hero">
-        <h1>What are you craving?</h1>
-        <input type="text" class="search-bar" placeholder="Search for 'Biryani', 'Pizza', 'Cake'..." onkeyup="searchFood()">
+        <h1>Say "Hey Jarvis..."</h1>
+        <input type="text" class="search-bar" placeholder="Search..." onkeyup="searchFood()">
     </div>
 
     <div class="food-zones">
-        <div class="zone-card active" onclick="filterFood('All')">All</div>
-        <div class="zone-card" onclick="filterFood('North Indian')">🥘 North Indian</div>
-        <div class="zone-card" onclick="filterFood('South Indian')">🥥 South Indian</div>
-        <div class="zone-card" onclick="filterFood('Chinese')">🍜 Chinese</div>
-        <div class="zone-card" onclick="filterFood('Fast Food')">🍔 Fast Food</div>
-        <div class="zone-card" onclick="filterFood('Dessert')">🍰 Dessert</div>
+        <div class="zone-card active" id="zone-all" onclick="filterFood('All')">All</div>
+        <div class="zone-card" id="zone-north" onclick="filterFood('North Indian')">🥘 North Indian</div>
+        <div class="zone-card" id="zone-south" onclick="filterFood('South Indian')">🥥 South Indian</div>
+        <div class="zone-card" id="zone-chinese" onclick="filterFood('Chinese')">🍜 Chinese</div>
+        <div class="zone-card" id="zone-fast" onclick="filterFood('Fast Food')">🍔 Fast Food</div>
+        <div class="zone-card" id="zone-dessert" onclick="filterFood('Dessert')">🍰 Dessert</div>
     </div>
 
-    <div class="restaurant-grid" id="restaurant-list">
+    <div class="restaurant-grid" id="restaurant-list"></div>
+
+    <div class="mic-btn" id="mic-btn" onclick="toggleAlwaysListening()">🎙️</div>
+
+    <div class="jarvis-window" id="jarvis-window">
+        <div class="jarvis-header">
+            <span>Jarvis AI</span>
+            <span onclick="toggleJarvisWindow()" style="cursor:pointer">✖</span>
         </div>
+        <div class="jarvis-messages" id="jarvis-chat">
+            <div class="msg bot">Say "Hey Jarvis" to start...</div>
+        </div>
+    </div>
 
     <div id="login-modal" class="modal-overlay">
         <div class="modal-box">
-            <h2>Welcome to FoodVerse</h2>
-            
+            <h2>Welcome</h2>
             <div id="step-1">
-                <input type="text" id="user-name" class="modal-input" placeholder="Enter your Name">
-                <input type="number" id="user-phone" class="modal-input" placeholder="Enter Phone Number">
+                <input type="text" id="user-name" class="modal-input" placeholder="Name">
+                <input type="number" id="user-phone" class="modal-input" placeholder="Phone">
                 <button class="action-btn" onclick="sendOTP()">Send OTP</button>
             </div>
-
             <div id="step-2" style="display: none;">
-                <p>OTP sent to <span id="display-phone" style="color:var(--primary)"></span></p>
-                <input type="number" id="user-otp" class="modal-input" placeholder="Enter OTP (Try 1234)">
-                <button class="action-btn" onclick="verifyOTP()">Verify & Login</button>
+                <p>OTP Sent to <span id="display-phone"></span></p>
+                <input type="number" id="user-otp" class="modal-input" placeholder="OTP">
+                <button class="action-btn" onclick="verifyOTP()">Verify</button>
             </div>
-            
-            <button onclick="closeModal('login-modal')" style="background:none; border:none; color:#aaa; margin-top:15px; cursor:pointer;">Cancel</button>
+            <button onclick="closeModal('login-modal')" style="background:none; border:none; color:#aaa; margin-top:10px;">Cancel</button>
         </div>
     </div>
 
     <div id="payment-modal" class="modal-overlay">
         <div class="modal-box">
-            <h2 style="margin-top:0">Select Payment Method</h2>
-            <p>Total to Pay: <span id="pay-amount" style="color: var(--primary); font-weight:bold;">₹0</span></p>
-            
-            <label class="pay-option">
-                <input type="radio" name="payment" value="UPI" checked>
-                <span>Google Pay / PhonePe / UPI</span>
-            </label>
-            <label class="pay-option">
-                <input type="radio" name="payment" value="Card">
-                <span>Credit / Debit Card</span>
-            </label>
-            <label class="pay-option">
-                <input type="radio" name="payment" value="COD">
-                <span>Cash on Delivery</span>
-            </label>
-
+            <h2>Payment</h2>
+            <p>Total: <span id="pay-amount" style="color: var(--primary);">₹0</span></p>
+            <label class="pay-option"><input type="radio" name="payment" value="UPI" checked><span>UPI</span></label>
+            <label class="pay-option"><input type="radio" name="payment" value="Card"><span>Card</span></label>
+            <label class="pay-option"><input type="radio" name="payment" value="COD"><span>COD</span></label>
             <button class="action-btn" onclick="confirmOrder()">✅ Place Order</button>
-            <button onclick="closeModal('payment-modal')" style="background:none; border:none; color:#aaa; margin-top:15px; cursor:pointer;">Cancel</button>
+            <button onclick="closeModal('payment-modal')" style="background:none; border:none; color:#aaa; margin-top:10px;">Cancel</button>
         </div>
     </div>
 
     <div id="map-view">
         <div id="google-map"></div>
         <div class="order-status">
-            <h2>Order Placed! <span style="color:#4caf50">● Live</span></h2>
-            <p>Payment Successful via <b id="payment-method-display">UPI</b></p>
-            <p>Driver <b>Ramesh</b> is arriving in:</p>
+            <h2>Order Live!</h2>
+            <p>Method: <b id="payment-method-display">UPI</b></p>
             <h1 id="timer">15:00</h1>
-            <button onclick="location.reload()" style="padding:10px 20px; cursor:pointer; background:#333; color:white; border:none; border-radius:5px;">Close</button>
+            <button onclick="location.reload()" style="padding:10px;">Close</button>
         </div>
     </div>
 
     <div class="cart-modal" id="cart-btn" onclick="openPayment()">Cart (0)</div>
 
     <script>
-        // --- DATA ---
+        // DATA
         const allRestaurants = [
             { name: "Butter Chicken", type: "North Indian", price: 320, img: "https://images.pexels.com/photos/2474661/pexels-photo-2474661.jpeg?auto=compress&cs=tinysrgb&w=600" },
             { name: "Paneer Tikka", type: "North Indian", price: 280, img: "https://images.pexels.com/photos/3928854/pexels-photo-3928854.jpeg?auto=compress&cs=tinysrgb&w=600" },
             { name: "Dal Makhani", type: "North Indian", price: 220, img: "https://images.pexels.com/photos/674574/pexels-photo-674574.jpeg?auto=compress&cs=tinysrgb&w=600" },
             { name: "Chole Bhature", type: "North Indian", price: 180, img: "https://images.pexels.com/photos/12737656/pexels-photo-12737656.jpeg?auto=compress&cs=tinysrgb&w=600" },
-            { name: "Tandoori Chicken", type: "North Indian", price: 350, img: "https://images.pexels.com/photos/106343/pexels-photo-106343.jpeg?auto=compress&cs=tinysrgb&w=600" },
-            
             { name: "Masala Dosa", type: "South Indian", price: 120, img: "https://images.pexels.com/photos/5560763/pexels-photo-5560763.jpeg?auto=compress&cs=tinysrgb&w=600" },
             { name: "Idli Vada", type: "South Indian", price: 90, img: "https://images.pexels.com/photos/4331490/pexels-photo-4331490.jpeg?auto=compress&cs=tinysrgb&w=600" },
-            { name: "Hyderabadi Biryani", type: "South Indian", price: 300, img: "https://images.pexels.com/photos/7394819/pexels-photo-7394819.jpeg?auto=compress&cs=tinysrgb&w=600" },
-            
             { name: "Veg Burger", type: "Fast Food", price: 150, img: "https://images.pexels.com/photos/1639557/pexels-photo-1639557.jpeg?auto=compress&cs=tinysrgb&w=600" },
             { name: "Chicken Pizza", type: "Fast Food", price: 450, img: "https://images.pexels.com/photos/825661/pexels-photo-825661.jpeg?auto=compress&cs=tinysrgb&w=600" },
-            { name: "French Fries", type: "Fast Food", price: 110, img: "https://images.pexels.com/photos/1583884/pexels-photo-1583884.jpeg?auto=compress&cs=tinysrgb&w=600" },
-            
             { name: "Hakka Noodles", type: "Chinese", price: 200, img: "https://images.pexels.com/photos/2347311/pexels-photo-2347311.jpeg?auto=compress&cs=tinysrgb&w=600" },
-            { name: "Manchurian", type: "Chinese", price: 210, img: "https://images.pexels.com/photos/2664216/pexels-photo-2664216.jpeg?auto=compress&cs=tinysrgb&w=600" },
-            
-            { name: "Gulab Jamun", type: "Dessert", price: 90, img: "https://images.pexels.com/photos/12333519/pexels-photo-12333519.jpeg?auto=compress&cs=tinysrgb&w=600" },
-            { name: "Chocolate Cake", type: "Dessert", price: 200, img: "https://images.pexels.com/photos/291528/pexels-photo-291528.jpeg?auto=compress&cs=tinysrgb&w=600" },
+            { name: "Gulab Jamun", type: "Dessert", price: 90, img: "https://images.pexels.com/photos/12333519/pexels-photo-12333519.jpeg?auto=compress&cs=tinysrgb&w=600" }
         ];
 
         let cart = [];
         let isLoggedIn = false;
         let userData = {};
+        let recognition;
+        let isAlwaysListening = false;
 
-        // --- 1. SEARCH FUNCTION ---
-        function searchFood() {
-            const query = document.querySelector('.search-bar').value.toLowerCase();
-            const filtered = allRestaurants.filter(item => 
-                item.name.toLowerCase().includes(query) || 
-                item.type.toLowerCase().includes(query)
-            );
-            displayRestaurants(filtered);
+        // --- 1. VOICE LISTEN LOOP ---
+        function toggleAlwaysListening() {
+            const btn = document.getElementById('mic-btn');
+            if (!('webkitSpeechRecognition' in window)) { alert("Use Chrome!"); return; }
+
+            if(isAlwaysListening) {
+                recognition.stop();
+                isAlwaysListening = false;
+                btn.classList.remove('active-listening');
+                speak("Jarvis sleeping.");
+            } else {
+                startRecognitionLoop();
+                isAlwaysListening = true;
+                btn.classList.add('active-listening');
+                speak("Jarvis Online.");
+            }
         }
 
-        // --- 2. AUTH FUNCTIONALITY ---
-        function openLoginModal() {
-            document.getElementById('login-modal').style.display = 'flex';
+        function startRecognitionLoop() {
+            recognition = new webkitSpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
+                console.log("Heard:", transcript);
+
+                if(transcript.includes("hey jarvis") || transcript.includes("jarvis")) {
+                    document.getElementById('jarvis-window').style.display = 'flex';
+                    let command = transcript.replace("hey jarvis", "").replace("jarvis", "").trim();
+                    
+                    if(command.length > 0) {
+                        addMsg(command, 'user');
+                        processJarvisCommand(command);
+                    } else {
+                        addMsg("Yes?", 'bot');
+                    }
+                } 
+                else if(document.getElementById('jarvis-window').style.display === 'flex') {
+                    addMsg(transcript, 'user');
+                    processJarvisCommand(transcript);
+                }
+            };
+            recognition.onend = function() { if(isAlwaysListening) recognition.start(); };
+            recognition.start();
         }
 
-        function sendOTP() {
-            const name = document.getElementById('user-name').value;
-            const phone = document.getElementById('user-phone').value;
-            
-            if(name === "" || phone.length < 10) {
-                alert("Please enter a valid Name and 10-digit Phone Number");
+        function speak(text) {
+            const synth = window.speechSynthesis;
+            const utter = new SpeechSynthesisUtterance(text);
+            synth.speak(utter);
+        }
+
+        function toggleJarvisWindow() {
+            const win = document.getElementById('jarvis-window');
+            win.style.display = win.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function addMsg(text, sender) {
+            const chat = document.getElementById('jarvis-chat');
+            const div = document.createElement('div');
+            div.className = `msg ${sender}`;
+            div.innerText = text;
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+            if(sender === 'bot') speak(text);
+        }
+
+        // --- 2. INTELLIGENT COMMAND PROCESSOR ---
+        function processJarvisCommand(msg) {
+            msg = msg.toLowerCase();
+
+            // A. NAVIGATION COMMANDS (NEW FEATURE!)
+            if(msg.includes("show") || msg.includes("open") || msg.includes("go to")) {
+                let category = "";
+                if(msg.includes("north")) category = "North Indian";
+                else if(msg.includes("south")) category = "South Indian";
+                else if(msg.includes("chinese")) category = "Chinese";
+                else if(msg.includes("fast")) category = "Fast Food";
+                else if(msg.includes("dessert")) category = "Dessert";
+                else if(msg.includes("all")) category = "All";
+
+                if(category) {
+                    addMsg(`Opening ${category} menu.`, 'bot');
+                    filterFood(category);
+                    return;
+                }
+            }
+
+            // B. AUTO-ORDER COMMAND (NEW FEATURE!)
+            if(msg.includes("place order") || msg.includes("confirm order")) {
+                if(cart.length === 0) {
+                    addMsg("Cart is empty.", 'bot');
+                } else {
+                    addMsg("Placing order automatically via Cash on Delivery.", 'bot');
+                    // Bypass modal, direct API call
+                    placeDirectOrder(); 
+                }
                 return;
             }
 
-            userData = { name, phone };
+            if(msg.includes("checkout")) {
+                addMsg("Opening payment options.", 'bot');
+                openPayment();
+                return;
+            }
             
-            // UI Transition
-            document.getElementById('step-1').style.display = 'none';
-            document.getElementById('step-2').style.display = 'block';
-            document.getElementById('display-phone').innerText = phone;
-            
-            // Mock OTP Alert
-            alert(`Your Verification OTP is: 1234`);
-        }
+            // C. SEARCH & ADD
+            let itemsFound = 0;
+            allRestaurants.forEach(item => {
+                const keywords = item.name.toLowerCase().split(' ');
+                const isMatch = keywords.some(word => msg.includes(word) && word.length > 2);
+                
+                if(isMatch) {
+                    let qty = 1;
+                    const num = msg.match(/\d+/);
+                    if(num) qty = parseInt(num[0]);
+                    
+                    for(let i=0; i<qty; i++) addToCart(item.name, item.price);
+                    itemsFound += qty;
+                }
+            });
 
-        function verifyOTP() {
-            const otp = document.getElementById('user-otp').value;
-            if(otp === "1234") {
-                isLoggedIn = true;
-                closeModal('login-modal');
-                
-                // Update Header
-                document.getElementById('login-btn').style.display = 'none';
-                const nameDisplay = document.getElementById('display-name');
-                nameDisplay.innerText = "Hi, " + userData.name;
-                nameDisplay.style.display = 'block';
-                
-                alert("Login Successful! You can now place orders.");
-            } else {
-                alert("Invalid OTP! Try 1234");
+            if(itemsFound > 0) addMsg(`Added ${itemsFound} items.`, 'bot');
+            else if(!msg.includes("yes") && !msg.includes("show") && !msg.includes("open")) {
+                addMsg("Item not found or command not understood.", 'bot');
             }
         }
 
@@ -281,32 +305,33 @@
         function displayRestaurants(data) {
             const grid = document.getElementById('restaurant-list');
             grid.innerHTML = ''; 
-            if(data.length === 0) grid.innerHTML = "<p>No dishes found.</p>";
-            
             data.forEach(res => {
                 const card = document.createElement('div');
                 card.className = 'restaurant-card';
                 card.innerHTML = `
-                    <div class="res-img-container">
-                        <img src="${res.img}" class="res-img" onerror="this.src='https://placehold.co/600x400?text=Yummy'">
-                    </div>
-                    <div class="res-info">
-                        <h3 style="margin:0">${res.name}</h3>
-                        <p style="color:#aaa; font-size:14px; margin:5px 0;">${res.type} • ₹${res.price}</p>
-                        <button class="add-btn" onclick="addToCart('${res.name}', ${res.price})">Add to Cart +</button>
-                    </div>`;
+                    <div class="res-img-container"><img src="${res.img}" class="res-img" onerror="this.src='https://placehold.co/600x400'"></div>
+                    <div class="res-info"><h3>${res.name}</h3><p style="color:#aaa">${res.type} • ₹${res.price}</p>
+                    <button class="add-btn" onclick="addToCart('${res.name}', ${res.price})">Add +</button></div>`;
                 grid.appendChild(card);
             });
         }
-        displayRestaurants(allRestaurants); // Init
+        displayRestaurants(allRestaurants);
 
         function filterFood(cat) {
-            // Highlight Button
+            // Update Active Class Visually
             document.querySelectorAll('.zone-card').forEach(el => el.classList.remove('active'));
-            event.target.classList.add('active');
             
+            // ID Mapping for Voice Activation
+            let idMap = { 'All': 'zone-all', 'North Indian': 'zone-north', 'South Indian': 'zone-south', 'Chinese': 'zone-chinese', 'Fast Food': 'zone-fast', 'Dessert': 'zone-dessert' };
+            if(idMap[cat]) document.getElementById(idMap[cat]).classList.add('active');
+
             if(cat === 'All') displayRestaurants(allRestaurants);
             else displayRestaurants(allRestaurants.filter(r => r.type === cat));
+        }
+
+        function searchFood() {
+            const q = document.querySelector('.search-bar').value.toLowerCase();
+            displayRestaurants(allRestaurants.filter(r => r.name.toLowerCase().includes(q)));
         }
 
         function addToCart(item, price) {
@@ -317,53 +342,69 @@
             btn.innerText = `View Cart (${cart.length}) • Pay ₹${total}`;
         }
 
-        function openPayment() {
-            if(cart.length === 0) return;
-            
-            // SECURITY CHECK
-            if(!isLoggedIn) {
-                alert("Please Login to Place Order");
-                openLoginModal();
-                return;
-            }
+        function openLoginModal() { document.getElementById('login-modal').style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-            const total = cart.reduce((a,b)=>a+b.price,0);
-            document.getElementById('pay-amount').innerText = "₹" + total;
-            document.getElementById('payment-modal').style.display = 'flex';
+        function sendOTP() {
+            const name = document.getElementById('user-name').value;
+            const phone = document.getElementById('user-phone').value;
+            if(!name || !phone) return alert("Enter details");
+            userData = { name, phone };
+            document.getElementById('step-1').style.display = 'none';
+            document.getElementById('step-2').style.display = 'block';
+            document.getElementById('display-phone').innerText = phone;
+            alert("OTP: 1234");
         }
 
-        function closeModal(id) {
-            document.getElementById(id).style.display = 'none';
+        function verifyOTP() {
+            if(document.getElementById('user-otp').value === "1234") {
+                isLoggedIn = true;
+                closeModal('login-modal');
+                document.getElementById('login-btn').style.display = 'none';
+                document.getElementById('display-name').innerText = "Hi, " + userData.name;
+                document.getElementById('display-name').style.display = 'block';
+            } else alert("Wrong OTP");
+        }
+
+        function openPayment() {
+            if(cart.length === 0) return;
+            if(!isLoggedIn) { openLoginModal(); return; }
+            document.getElementById('pay-amount').innerText = "₹" + cart.reduce((a,b)=>a+b.price,0);
+            document.getElementById('payment-modal').style.display = 'flex';
         }
 
         async function confirmOrder() {
             const method = document.querySelector('input[name="payment"]:checked').value;
-            const total = cart.reduce((a,b)=>a+b.price,0);
-
             closeModal('payment-modal');
-
             try {
-                // Connect to backend
                 await fetch('/api/order/place', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        user: userData, 
-                        items: cart, 
-                        total: total, 
-                        paymentMethod: method 
-                    })
+                    body: JSON.stringify({ user: userData, items: cart, total: 500, paymentMethod: method })
                 });
-                // Success Flow
-                showMap(method);
-            } catch (err) {
-                // Fallback Flow
-                showMap(method);
-            }
+            } catch(e) {}
+            document.getElementById('payment-method-display').innerText = method;
+            document.getElementById('map-view').style.display = 'block';
+            initLeafletMap();
+            startTimer();
         }
 
-        function showMap(method) {
-            document.getElementById('payment-method-display').innerText = method;
+        // NEW: Direct Order for Voice
+        async function placeDirectOrder() {
+            closeModal('payment-modal'); // Just in case it's open
+            if(!isLoggedIn) { 
+                addMsg("Please login first.", 'bot'); 
+                openLoginModal(); 
+                return; 
+            }
+            try {
+                await fetch('/api/order/place', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user: userData, items: cart, total: 500, paymentMethod: "COD (Voice)" })
+                });
+            } catch(e) {}
+            document.getElementById('payment-method-display').innerText = "COD (Voice)";
             document.getElementById('map-view').style.display = 'block';
             initLeafletMap();
             startTimer();
@@ -374,7 +415,7 @@
             var map = L.map('google-map').setView([lat, lng], 15);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
             L.marker([lat, lng]).addTo(map).bindPopup("Restaurant").openPopup();
-            L.marker([lat + 0.005, lng + 0.005]).addTo(map).bindPopup("User Location");
+            L.marker([lat + 0.005, lng + 0.005]).addTo(map).bindPopup("You");
             var polyline = L.polyline([[lat, lng], [lat + 0.005, lng + 0.005]], {color: 'red', weight: 5}).addTo(map);
             map.fitBounds(polyline.getBounds());
         }
